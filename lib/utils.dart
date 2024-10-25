@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 double mapValue(
     double value, double inMin, double inMax, double outMin, double outMax) {
   return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
@@ -40,3 +42,31 @@ void setCheckBoxState(
     default:
   }
 }
+
+class UiState {
+  BrightnessModel _model;
+  double _brightness;
+
+  UiState(this._brightness, this._model);
+  BrightnessModel get model => _model; // 获取模式
+  double get brightness => _brightness; // 获取亮度
+
+  void setBrightModel(BrightnessModel model) {
+    _model = model; // 设置亮度模式
+  }
+
+  void setBrightness(double brightness) {
+    _brightness = brightness; // 设置亮度
+  }
+}
+
+const String key_type = "type";
+const String rev_type_deviceList = "deviceList";
+const String rev_type_lightInfo = "lightInfo";
+const String send_type_lightInfo = "lightInfo";
+const String send_type_deviceList = "deviceList";
+
+const String value_brightness = "brightness";
+const String value_model = "model";
+const String value_deviceIp = 'deviceIp';
+const String value_deviceName = 'deviceName';
