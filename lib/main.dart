@@ -3,8 +3,9 @@
 import 'package:flutter/material.dart';
 import 'utils.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-import 'dart:io';
 import 'dart:convert';
+import 'UdpSocketManager.dart';
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -50,7 +51,13 @@ class _MyHomePageState extends State<MyHomePage> {
   String _localIpAddress = '';
   String _localMacAddress = '';
 
+  int _timeCount = 0;
+
   Map<String, String>? _remoteDeviceList;
+
+  final _udpSocketManager = UdpSocketManager();
+
+  Timer? _debounceTimer;
 
   // 模式的名称
   final Map<BrightnessModel, String> _showText = {
@@ -69,10 +76,13 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    startUdpServer();
     _initializeStatus(); // 在启动时查询状态
     _getNetworkInfo();
+    _udpSocketManager.initializeSocket();
   }
+
+  @override
+  void dispose() {}
 
   Future<void> _getNetworkInfo() async {
     final info = NetworkInfo();
@@ -86,24 +96,6 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _localIpAddress = wifiIP ?? '';
       _localMacAddress = wifiBSSID ?? '';
-    });
-  }
-
-  // 监听UDP端口的函数
-  void startUdpServer() async {
-    RawDatagramSocket.bind(InternetAddress.anyIPv4, 8888).then((socket) {
-      socket.listen((RawSocketEvent event) {
-        if (event == RawSocketEvent.read) {
-          Datagram? datagram = socket.receive();
-          if (datagram != null) {
-            String message = String.fromCharCodes(datagram.data);
-            Map<String, dynamic> jsonData = jsonDecode(message);
-            if (jsonData[key_type] == rev_type_deviceList) {
-              _remoteDeviceList.
-            } else if (jsonData[key_type] == rev_type_lightInfo) {}
-          }
-        }
-      });
     });
   }
 
@@ -152,12 +144,35 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // 发送UDP消息的函数
-  void sendUdpMessage(String message, String address, int port) async {
-    RawDatagramSocket.bind(InternetAddress.anyIPv4, 0).then((socket) {
-      socket.send(message.codeUnits, InternetAddress(address), port);
-      socket.close();
+  void _incrementCounter(double value) {
+    setState(() {
+      _uiState.setBrightness(value);
     });
+
+    // 如果已有计时器在运行，则取消它
+    if (_debounceTimer?.isActive ?? false) {
+      _timeCount++;
+      _debounceTimer?.cancel();
+    }
+
+    if (_timeCount >= 5) {
+      _timeCount = 0;
+      _sendCtrlMessage("255.255.255.255", sendPort);
+      return;
+    }
+
+    // 设置一个新的定时器，仅在延迟完成后发送消息
+    _debounceTimer = Timer(const Duration(milliseconds: 10), () {
+      _sendCtrlMessage("255.255.255.255", sendPort);
+    });
+  }
+
+  void _sendCtrlMessage(String ip, int port) {
+    Map<String, dynamic> sendData = {
+      key_type: send_type_lightInfo,
+      value_brightness: mapValue(_uiState.brightness, 0, 100, 0, 1024).round(),
+    };
+    _udpSocketManager.sendMessage(jsonEncode(sendData), ip, port);
   }
 
   // 状态初始化方法
@@ -174,12 +189,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // 这里的代码实现根据需要发送 UDP 消息并获取设备状态
     // 这里返回假设的状态，实际应该根据你的设备返回
     return 'ON'; // 你可以根据实际需求调整
-  }
-
-  void _incrementCounter(double value) {
-    setState(() {
-      _uiState.setBrightness(value); // 更新亮度状态
-    });
   }
 
   @override
@@ -204,10 +213,10 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             Column(
               children: [
-                const Icon(
-                  Icons.wb_sunny, // 表示亮度增强
-                  color: Color.fromARGB(255, 162, 153, 77),
-                  size: 30,
+                IconButton(
+                  icon:const Icon(Icons.wb_sunny), // 表示亮度增强
+                  color: const Color.fromARGB(255, 162, 153, 77),
+                  iconSize: 30, onPressed: () { _incrementCounter(100); },
                 ),
                 SizedBox(
                   height: 280,
@@ -228,9 +237,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         value: _uiState.brightness,
                         onChanged: (double value) {
                           _incrementCounter(value);
-                          setState(() {
-                            _uiState.setBrightness(value);
-                          });
                         },
                         onChangeEnd: (double value) {},
                         min: 0,
@@ -241,10 +247,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 ),
-                const Icon(
-                  Icons.nightlight_round, // 表示亮度减弱
+                IconButton(
+                  icon: const Icon(Icons.nightlight_round), // 表示亮度减弱
                   color: Colors.blueGrey,
-                  size: 30,
+                  iconSize: 30, 
+                  onPressed: () { _incrementCounter(0); },
                 ),
               ],
             ),

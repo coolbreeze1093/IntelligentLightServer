@@ -1,4 +1,3 @@
-import 'dart:ffi';
 
 double mapValue(
     double value, double inMin, double inMax, double outMin, double outMax) {
@@ -70,3 +69,6 @@ const String value_brightness = "brightness";
 const String value_model = "model";
 const String value_deviceIp = 'deviceIp';
 const String value_deviceName = 'deviceName';
+
+const int revPort = 56698;
+const int sendPort = 56696;
