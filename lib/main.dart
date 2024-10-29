@@ -9,6 +9,7 @@ import 'DeviceInfoDialog.dart';
 import 'GetNetworkInfo.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: '又是美好的一天',
       theme: ThemeData(
         colorScheme: ColorScheme.dark(
           primary: Colors.blueGrey.shade800,
@@ -62,6 +63,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   late DeviceInfoDialog deviceInfoDialog;
 
+  late String? _curUser;
+
   // 模式的名称
   final Map<BrightnessModel, String> _showText = {
     BrightnessModel.soft: '柔光',
@@ -82,9 +85,17 @@ class _MyHomePageState extends State<MyHomePage> {
     _uiState.setBrightness(0);
     udpSocketManager.initializeSocket();
     udpSocketManager.brightnessCallback(setUiState);
-
+    getCurrentUser();
     deviceInfoDialog = DeviceInfoDialog(
         networkInfo: getNetworkInfo, udpSocketManager: udpSocketManager);
+  }
+
+  void getCurrentUser() async {
+    String? ip = await getData(config_Key_CurrentUser);
+    if (ip != null) {
+      _curUser = ip;
+      udpSocketManager.queryBrightness(ip);
+    }
   }
 
   @override
@@ -112,13 +123,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (_timeCount >= 5) {
       _timeCount = 0;
-      _sendCtrlMessage("255.255.255.255", sendPort);
+      _sendCtrlMessage(_curUser!, sendPort);
       return;
     }
 
     // 设置一个新的定时器，仅在延迟完成后发送消息
     _debounceTimer = Timer(const Duration(milliseconds: 10), () {
-      _sendCtrlMessage("255.255.255.255", sendPort);
+      _sendCtrlMessage(_curUser!, sendPort);
     });
   }
 
@@ -128,22 +139,6 @@ class _MyHomePageState extends State<MyHomePage> {
       value_brightness: mapValue(_uiState.brightness, 0, 100, 0, 1024).round(),
     };
     udpSocketManager.sendMessage(jsonEncode(sendData), ip, port);
-  }
-
-  // 状态初始化方法
-  void _initializeStatus() async {
-    // 通过 UDP 查询初始状态
-    String initialStatus = await _queryStatus(); // 这里假设你有一个查询状态的方法
-    setState(() {
-      _uiState.setBrightness(initialStatus == 'ON' ? 1.0 : 0.0);
-    });
-  }
-
-  // 查询状态的方法（示例）
-  Future<String> _queryStatus() async {
-    // 这里的代码实现根据需要发送 UDP 消息并获取设备状态
-    // 这里返回假设的状态，实际应该根据你的设备返回
-    return 'ON'; // 你可以根据实际需求调整
   }
 
   @override
@@ -156,12 +151,16 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: const Icon(Icons.build), // 使用扳手图标
             onPressed: () async {
-              showDialog(
+              String? selectUser = await showDialog<String?>(
                 context: context,
                 builder: (BuildContext context) {
                   return deviceInfoDialog;
                 },
               );
+              if (selectUser != null || selectUser != "empty") {
+                _curUser = selectUser;
+                saveData(config_Key_CurrentUser, selectUser!);
+              }
             }, // 点击后调用的方法
             tooltip: '设置', // 鼠标悬停时显示的提示
           ),
@@ -235,6 +234,20 @@ class _MyHomePageState extends State<MyHomePage> {
                         setState(() {
                           _uiState.setBrightModel(_showSeq[index]);
                         });
+                        switch (_uiState.model) {
+                          case BrightnessModel.read:
+                            _incrementCounter(3);
+                            break;
+                          case BrightnessModel.colorful:
+                            _incrementCounter(80);
+                            break;
+                          case BrightnessModel.sleep:
+                            _incrementCounter(0);
+                            break;
+                          case BrightnessModel.soft:
+                            _incrementCounter(30);
+                            break;
+                        }
                       },
                       child: Container(
                         width: 80, // 设置宽度

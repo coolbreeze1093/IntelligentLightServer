@@ -84,8 +84,11 @@ class UdpSocketManager {
     sendMessage(jsonEncode(message), ip, sendPort);
   }
 
-  void queryDevicInfo() {
-    Map<String, String> message = {key_type: send_type_deviceList};
+  void queryDevicInfo(String localip) {
+    Map<String, String> message = {
+      key_type: send_type_deviceList,
+      value_localip: localip
+    };
 
     sendMessage(jsonEncode(message), broadcastIP, sendPort);
   }

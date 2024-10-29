@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 double mapValue(
     double value, double inMin, double inMax, double outMin, double outMax) {
   return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
@@ -58,6 +60,18 @@ class UiState {
   }
 }
 
+// 保存数据
+Future<void> saveData(String key, String value) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(key, value);
+}
+
+// 读取数据
+Future<String?> getData(String key) async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString(key);
+}
+
 class DeviceInfo {
   String name = "";
   String address = "";
@@ -69,6 +83,7 @@ const String rev_type_lightInfo = "lightInfo";
 const String send_type_lightInfo = "lightInfo";
 const String send_type_deviceList = "deviceList";
 
+const String value_localip = "localip";
 const String value_brightness = "brightness";
 const String value_model = "model";
 const String value_deviceIp = 'deviceIp';
@@ -78,3 +93,5 @@ const int revPort = 56698;
 const int sendPort = 56696;
 
 const String broadcastIP = '255.255.255.255';
+
+const String config_Key_CurrentUser = "CurrentUser";
