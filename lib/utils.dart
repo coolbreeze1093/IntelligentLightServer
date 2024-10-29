@@ -48,6 +48,7 @@ class UiState {
   double _brightness;
 
   UiState(this._brightness, this._model);
+  
   BrightnessModel get model => _model; // 获取模式
   double get brightness => _brightness; // 获取亮度
 
@@ -81,6 +82,7 @@ const String key_type = "type";
 const String rev_type_deviceList = "deviceList";
 const String rev_type_lightInfo = "lightInfo";
 const String send_type_lightInfo = "lightInfo";
+const String send_type_querylightInfo = "querylightInfo";
 const String send_type_deviceList = "deviceList";
 
 const String value_localip = "localip";

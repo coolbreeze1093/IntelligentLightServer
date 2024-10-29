@@ -4,7 +4,7 @@ import 'utils.dart';
 
 class UdpSocketManager {
   late RawDatagramSocket socket;
-  Map<String, DeviceInfo> _deviceList = {};
+  final Map<String, DeviceInfo> _deviceList = {};
   late Function _brightnessCallback;
   late Function _deviceInfoCallback;
   UdpSocketManager();
@@ -34,14 +34,15 @@ class UdpSocketManager {
             if (msgJson.isNotEmpty) {
               if (msgJson.containsKey(key_type)) {
                 if (msgJson[key_type] == rev_type_deviceList) {
-                  var _df = DeviceInfo();
-                  _df.address = msgJson[value_deviceIp];
-                  _df.name = msgJson[value_deviceName];
-                  _deviceList[msgJson[value_deviceIp]] = _df;
+                  var df = DeviceInfo();
+                  df.address = msgJson[value_deviceIp];
+                  df.name = msgJson[value_deviceName];
+                  _deviceList[msgJson[value_deviceIp]] = df;
                   _deviceInfoCallback(_deviceList);
                 } else if (msgJson[key_type] == rev_type_lightInfo) {
+                  int brightness=msgJson[value_brightness];
                   UiState uistate =
-                      UiState(msgJson[value_brightness], msgJson[value_model]);
+                      UiState(mapValue(brightness.ceilToDouble(), 0, 1024, 0, 100), BrightnessModel.read);
                   _brightnessCallback(uistate);
                 }
               }
@@ -78,10 +79,10 @@ class UdpSocketManager {
     _deviceInfoCallback = func;
   }
 
-  void queryBrightness(String ip) {
-    Map<String, String> message = {key_type: send_type_lightInfo};
+  void queryBrightness(String remoteip,String localip) {
+    Map<String, String> message = {key_type: send_type_querylightInfo,value_localip: localip};
 
-    sendMessage(jsonEncode(message), ip, sendPort);
+    sendMessage(jsonEncode(message), remoteip, sendPort);
   }
 
   void queryDevicInfo(String localip) {

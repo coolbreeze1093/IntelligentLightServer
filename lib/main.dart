@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '又是美好的一天',
+      title: '灯控',
       theme: ThemeData(
         colorScheme: ColorScheme.dark(
           primary: Colors.blueGrey.shade800,
@@ -94,7 +94,9 @@ class _MyHomePageState extends State<MyHomePage> {
     String? ip = await getData(config_Key_CurrentUser);
     if (ip != null) {
       _curUser = ip;
-      udpSocketManager.queryBrightness(ip);
+      getNetworkInfo.getNetworkInfo((String ip, String mac) {
+        udpSocketManager.queryBrightness(_curUser!, ip);
+      });
     }
   }
 

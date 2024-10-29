@@ -8,7 +8,7 @@ class DeviceInfoDialog extends StatefulWidget {
   final NetworkInfoMan networkInfo;
   final UdpSocketManager udpSocketManager;
 
-  DeviceInfoDialog({
+  const DeviceInfoDialog({
     super.key,
     required this.networkInfo,
     required this.udpSocketManager,
@@ -112,11 +112,11 @@ class _DeviceInfoDialog extends State<DeviceInfoDialog> {
               child:
                   Text('网络信息:', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
-            Text('IP 地址: $_localIP', style: TextStyle(fontSize: 14)),
-            Text('MAC 地址: $_localMac', style: TextStyle(fontSize: 14)),
+            Text('IP 地址: $_localIP', style: const TextStyle(fontSize: 14)),
+            Text('MAC 地址: $_localMac', style: const TextStyle(fontSize: 14)),
             const SizedBox(height: 20),
             Text('当前设备: ${_curUser?.name ?? "无"}',
-                style: TextStyle(fontSize: 14)),
+                style: const TextStyle(fontSize: 14)),
           ],
         ),
       ),
@@ -134,13 +134,13 @@ class _DeviceInfoDialog extends State<DeviceInfoDialog> {
                     Navigator.of(context).pop(_curUser?.address ?? "empty");
                   }
                 },
-                child: Text("确认", style: TextStyle(color: Colors.cyanAccent)),
+                child: const Text("确认", style: TextStyle(color: Colors.cyanAccent)),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop("empty");
                 },
-                child: Text("取消", style: TextStyle(color: Colors.cyanAccent)),
+                child: const Text("取消", style: TextStyle(color: Colors.cyanAccent)),
               ),
             ],
           ),
