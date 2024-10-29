@@ -1,10 +1,9 @@
-
 double mapValue(
     double value, double inMin, double inMax, double outMin, double outMax) {
   return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
 }
 
-enum BrightnessModel { constant, flash, breathe, close }
+enum BrightnessModel { read, colorful, sleep, soft } //0,1,2,3
 
 void setCheckBoxState(
     Map<BrightnessModel, bool> stateMap, BrightnessModel model, bool? state) {
@@ -14,29 +13,29 @@ void setCheckBoxState(
     }
   }
   switch (model) {
-    case BrightnessModel.breathe:
-      stateMap[BrightnessModel.breathe] = true;
-      stateMap[BrightnessModel.close] = false;
-      stateMap[BrightnessModel.constant] = false;
-      stateMap[BrightnessModel.flash] = false;
+    case BrightnessModel.sleep:
+      stateMap[BrightnessModel.sleep] = true;
+      stateMap[BrightnessModel.soft] = false;
+      stateMap[BrightnessModel.read] = false;
+      stateMap[BrightnessModel.colorful] = false;
       break;
-    case BrightnessModel.close:
-      stateMap[BrightnessModel.breathe] = false;
-      stateMap[BrightnessModel.close] = true;
-      stateMap[BrightnessModel.constant] = false;
-      stateMap[BrightnessModel.flash] = false;
+    case BrightnessModel.soft:
+      stateMap[BrightnessModel.sleep] = false;
+      stateMap[BrightnessModel.soft] = true;
+      stateMap[BrightnessModel.read] = false;
+      stateMap[BrightnessModel.colorful] = false;
       break;
-    case BrightnessModel.constant:
-      stateMap[BrightnessModel.breathe] = false;
-      stateMap[BrightnessModel.close] = false;
-      stateMap[BrightnessModel.constant] = true;
-      stateMap[BrightnessModel.flash] = false;
+    case BrightnessModel.read:
+      stateMap[BrightnessModel.sleep] = false;
+      stateMap[BrightnessModel.soft] = false;
+      stateMap[BrightnessModel.read] = true;
+      stateMap[BrightnessModel.colorful] = false;
       break;
-    case BrightnessModel.flash:
-      stateMap[BrightnessModel.breathe] = false;
-      stateMap[BrightnessModel.close] = false;
-      stateMap[BrightnessModel.constant] = false;
-      stateMap[BrightnessModel.flash] = true;
+    case BrightnessModel.colorful:
+      stateMap[BrightnessModel.sleep] = false;
+      stateMap[BrightnessModel.soft] = false;
+      stateMap[BrightnessModel.read] = false;
+      stateMap[BrightnessModel.colorful] = true;
       break;
     default:
   }
@@ -59,6 +58,11 @@ class UiState {
   }
 }
 
+class DeviceInfo {
+  String name = "";
+  String address = "";
+}
+
 const String key_type = "type";
 const String rev_type_deviceList = "deviceList";
 const String rev_type_lightInfo = "lightInfo";
@@ -72,3 +76,5 @@ const String value_deviceName = 'deviceName';
 
 const int revPort = 56698;
 const int sendPort = 56696;
+
+const String broadcastIP = '255.255.255.255';

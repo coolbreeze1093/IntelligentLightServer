@@ -2,10 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'utils.dart';
-import 'package:network_info_plus/network_info_plus.dart';
 import 'dart:convert';
 import 'UdpSocketManager.dart';
 import 'dart:async';
+import 'DeviceInfoDialog.dart';
+import 'GetNetworkInfo.dart';
 
 void main() {
   runApp(const MyApp());
@@ -47,101 +48,55 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final UiState _uiState = UiState(0.0, BrightnessModel.close);
-  String _localIpAddress = '';
-  String _localMacAddress = '';
+  UiState _uiState = UiState(0.0, BrightnessModel.soft);
+
+  NetworkInfoMan getNetworkInfo = NetworkInfoMan();
 
   int _timeCount = 0;
 
   Map<String, String>? _remoteDeviceList;
 
-  final _udpSocketManager = UdpSocketManager();
+  UdpSocketManager udpSocketManager = UdpSocketManager();
 
   Timer? _debounceTimer;
 
+  late DeviceInfoDialog deviceInfoDialog;
+
   // 模式的名称
   final Map<BrightnessModel, String> _showText = {
-    BrightnessModel.close: '关闭',
-    BrightnessModel.breathe: '呼吸',
-    BrightnessModel.constant: '常量',
-    BrightnessModel.flash: '闪烁'
+    BrightnessModel.soft: '柔光',
+    BrightnessModel.sleep: '睡眠',
+    BrightnessModel.read: '阅读',
+    BrightnessModel.colorful: '炫彩'
   };
 
   final List<BrightnessModel> _showSeq = [
-    BrightnessModel.constant,
-    BrightnessModel.breathe,
-    BrightnessModel.flash,
-    BrightnessModel.close
+    BrightnessModel.read,
+    BrightnessModel.sleep,
+    BrightnessModel.colorful,
+    BrightnessModel.soft
   ];
   @override
   void initState() {
     super.initState();
-    _initializeStatus(); // 在启动时查询状态
-    _getNetworkInfo();
-    _udpSocketManager.initializeSocket();
+    _uiState.setBrightness(0);
+    udpSocketManager.initializeSocket();
+    udpSocketManager.brightnessCallback(setUiState);
+
+    deviceInfoDialog = DeviceInfoDialog(
+        networkInfo: getNetworkInfo, udpSocketManager: udpSocketManager);
   }
 
   @override
-  void dispose() {}
-
-  Future<void> _getNetworkInfo() async {
-    final info = NetworkInfo();
-
-    // 获取 IP 地址
-    String? wifiIP = await info.getWifiIP();
-
-    // 获取 MAC 地址
-    String? wifiBSSID = await info.getWifiBSSID();
-
-    setState(() {
-      _localIpAddress = wifiIP ?? '';
-      _localMacAddress = wifiBSSID ?? '';
-    });
+  void dispose() {
+    super.dispose();
+    udpSocketManager.close();
   }
 
-  void _showDeviceInfo(String ipAddress, String macAddress) {
-    // 显示设备列表和网络信息
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('设备列表和网络信息'),
-          content: SizedBox(
-            width: 300,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('设备列表:'),
-                // 这里可以根据需要填充设备列表
-                ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: 5, // 示例设备数量
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text('设备 ${index + 1}'),
-                    );
-                  },
-                ),
-                const SizedBox(height: 10),
-                const Text('网络信息:'),
-                // 示例网络信息
-                Text('IP 地址: $ipAddress'),
-                Text('MAC 地址: $macAddress'),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("确认",
-                  style: TextStyle(color: Colors.cyanAccent.shade400)),
-            ),
-          ],
-        );
-      },
-    );
+  void setUiState(UiState us) {
+    setState(() {
+      _uiState = us;
+    });
   }
 
   void _incrementCounter(double value) {
@@ -172,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
       key_type: send_type_lightInfo,
       value_brightness: mapValue(_uiState.brightness, 0, 100, 0, 1024).round(),
     };
-    _udpSocketManager.sendMessage(jsonEncode(sendData), ip, port);
+    udpSocketManager.sendMessage(jsonEncode(sendData), ip, port);
   }
 
   // 状态初始化方法
@@ -200,8 +155,13 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.build), // 使用扳手图标
-            onPressed: () {
-              _showDeviceInfo(_localIpAddress, _localMacAddress);
+            onPressed: () async {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return deviceInfoDialog;
+                },
+              );
             }, // 点击后调用的方法
             tooltip: '设置', // 鼠标悬停时显示的提示
           ),
@@ -214,9 +174,12 @@ class _MyHomePageState extends State<MyHomePage> {
             Column(
               children: [
                 IconButton(
-                  icon:const Icon(Icons.wb_sunny), // 表示亮度增强
+                  icon: const Icon(Icons.wb_sunny), // 表示亮度增强
                   color: const Color.fromARGB(255, 162, 153, 77),
-                  iconSize: 30, onPressed: () { _incrementCounter(100); },
+                  iconSize: 30,
+                  onPressed: () {
+                    _incrementCounter(100);
+                  },
                 ),
                 SizedBox(
                   height: 280,
@@ -250,8 +213,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 IconButton(
                   icon: const Icon(Icons.nightlight_round), // 表示亮度减弱
                   color: Colors.blueGrey,
-                  iconSize: 30, 
-                  onPressed: () { _incrementCounter(0); },
+                  iconSize: 30,
+                  onPressed: () {
+                    _incrementCounter(0);
+                  },
                 ),
               ],
             ),
