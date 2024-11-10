@@ -128,17 +128,21 @@ class _DeviceInfoDialog extends State<DeviceInfoDialog> {
             children: [
               TextButton(
                 onPressed: () {
-                  if (_selectedIndex == null) {
-                    Navigator.of(context).pop("empty");
+                  DeviceInfo info=DeviceInfo();
+                    info.address="empty";
+                  if (_selectedIndex == null||_curUser==null) {
+                    Navigator.of(context).pop(info);
                   } else {
-                    Navigator.of(context).pop(_curUser?.address ?? "empty");
+                    Navigator.of(context).pop(_curUser!);
                   }
                 },
                 child: const Text("确认", style: TextStyle(color: Colors.cyanAccent)),
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop("empty");
+                  DeviceInfo info=DeviceInfo();
+                    info.address="empty";
+                  Navigator.of(context).pop(info);
                 },
                 child: const Text("取消", style: TextStyle(color: Colors.cyanAccent)),
               ),

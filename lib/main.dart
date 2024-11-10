@@ -49,7 +49,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  UiState _uiState = UiState(0.0, BrightnessModel.soft);
+  //UiState _uiState = UiState(0.0, BrightnessModel.soft);
 
   NetworkInfoMan getNetworkInfo = NetworkInfoMan();
 
@@ -63,7 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   late DeviceInfoDialog deviceInfoDialog;
 
-  late String? _curUser;
+  DeviceInfo _curUser=DeviceInfo();
 
   // 模式的名称
   final Map<BrightnessModel, String> _showText = {
@@ -82,7 +82,11 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _uiState.setBrightness(0);
+     _curUser.address="127.0.0.1";
+     _curUser.name="empty";
+     _curUser.deviceList=[];
+
+    
     udpSocketManager.initializeSocket();
     udpSocketManager.brightnessCallback(setUiState);
     getCurrentUser();
@@ -93,11 +97,22 @@ class _MyHomePageState extends State<MyHomePage> {
   void getCurrentUser() async {
     String? ip = await getData(config_Key_CurrentUser);
     if (ip != null) {
-      _curUser = ip;
-      getNetworkInfo.getNetworkInfo((String ip, String mac) {
-        udpSocketManager.queryBrightness(_curUser!, ip);
-      });
+      _curUser.address = ip;
     }
+    List<String>? deviceList = await getListData(config_Key_CurrentUser);
+    if(deviceList!=null)
+    {
+      _curUser.deviceList=deviceList;
+    }
+
+    for(String value in _curUser.deviceList)
+    {
+      _curUser.lightinfo[value]=UiState(0,BrightnessModel.none);
+    }
+
+    getNetworkInfo.getNetworkInfo((String ip, String mac) {
+        udpSocketManager.queryBrightness(_curUser.address, ip);
+    });
   }
 
   @override
@@ -106,9 +121,11 @@ class _MyHomePageState extends State<MyHomePage> {
     udpSocketManager.close();
   }
 
-  void setUiState(UiState us) {
+  void setUiState(Map<String,int> us) {
     setState(() {
-      _uiState = us;
+      us.forEach((String key,int value){
+      _curUser.lightinfo[key]?.setBrightness(mapValue(value.ceilToDouble(), 0, 1024, 0, 100));
+    }); 
     });
   }
 
@@ -153,15 +170,16 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: const Icon(Icons.build), // 使用扳手图标
             onPressed: () async {
-              String? selectUser = await showDialog<String?>(
+              DeviceInfo? selectUser = await showDialog<DeviceInfo?>(
                 context: context,
                 builder: (BuildContext context) {
                   return deviceInfoDialog;
                 },
               );
-              if (selectUser != null || selectUser != "empty") {
+              if (selectUser != null || selectUser?.address != "empty") {
                 _curUser = selectUser;
-                saveData(config_Key_CurrentUser, selectUser!);
+                saveData(config_Key_CurrentUser, _curUser!.address);
+                saveListData(config_Key_CurrentLightInfo, _curUser!.deviceList);
               }
             }, // 点击后调用的方法
             tooltip: '设置', // 鼠标悬停时显示的提示
@@ -174,50 +192,115 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             Column(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.wb_sunny), // 表示亮度增强
-                  color: const Color.fromARGB(255, 162, 153, 77),
-                  iconSize: 30,
-                  onPressed: () {
-                    _incrementCounter(100);
-                  },
-                ),
-                SizedBox(
-                  height: 280,
-                  child: RotatedBox(
-                    quarterTurns: 3,
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 65, // 设置轨道高度
-                        trackShape: const RoundedRectSliderTrackShape(),
-                        activeTrackColor: Colors.cyanAccent.shade400,
-                        inactiveTrackColor: Colors.blueGrey.shade700,
-                        thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 25), // 设置滑块大小
-                        overlayShape: const RoundSliderOverlayShape(
-                            overlayRadius: 30), // 设置滑块外圈大小
-                      ),
-                      child: Slider(
-                        value: _uiState.brightness,
-                        onChanged: (double value) {
-                          _incrementCounter(value);
-                        },
-                        onChangeEnd: (double value) {},
-                        min: 0,
-                        max: 100,
-                        divisions: 100,
-                        label: _uiState.brightness.round().toString(),
+                Row(
+                  children: [
+                    SizedBox(
+                      height: 360,
+                      child: Column(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.wb_sunny), // 表示亮度增强
+                            color: const Color.fromARGB(255, 162, 153, 77),
+                            iconSize: 30,
+                            onPressed: () {
+                              _incrementCounter(100);
+                            },
+                          ),
+                          SizedBox(
+                            height: 280,
+                            child: RotatedBox(
+                              quarterTurns: 3,
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 65, // 设置轨道高度
+                                  trackShape:
+                                      const RoundedRectSliderTrackShape(),
+                                  activeTrackColor: Colors.cyanAccent.shade400,
+                                  inactiveTrackColor: Colors.blueGrey.shade700,
+                                  thumbShape: const RoundSliderThumbShape(
+                                      enabledThumbRadius: 25), // 设置滑块大小
+                                  overlayShape: const RoundSliderOverlayShape(
+                                      overlayRadius: 30), // 设置滑块外圈大小
+                                ),
+                                child: Slider(
+                                  value: _uiState.brightness,
+                                  onChanged: (double value) {
+                                    _incrementCounter(value);
+                                  },
+                                  onChangeEnd: (double value) {},
+                                  min: 0,
+                                  max: 100,
+                                  divisions: 100,
+                                  label: _uiState.brightness.round().toString(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.nightlight_round), // 表示亮度减弱
+                            color: Colors.blueGrey,
+                            iconSize: 30,
+                            onPressed: () {
+                              _incrementCounter(0);
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.nightlight_round), // 表示亮度减弱
-                  color: Colors.blueGrey,
-                  iconSize: 30,
-                  onPressed: () {
-                    _incrementCounter(0);
-                  },
+                    SizedBox(
+                      height: 280,
+                      child: RotatedBox(
+                        quarterTurns: 3,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(25), // 设置整体圆角
+                          child: Container(
+                            width: 320, // 设置宽度，确保内容不超出
+                            height: 50, // 设置高度
+                            color: Colors.transparent,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(_showSeq.length, (index) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _uiState.setBrightModel(_showSeq[index]);
+                                    });
+                                    switch (_uiState.model) {
+                                      case BrightnessModel.read:
+                                        _incrementCounter(3);
+                                        break;
+                                      case BrightnessModel.colorful:
+                                        _incrementCounter(80);
+                                        break;
+                                      case BrightnessModel.sleep:
+                                        _incrementCounter(0);
+                                        break;
+                                      case BrightnessModel.soft:
+                                        _incrementCounter(30);
+                                        break;
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 80, // 设置宽度
+                                    height: 50, // 设置高度
+                                    alignment: Alignment.center, // 使文字居中
+                                    color: _uiState.model == _showSeq[index]
+                                        ? Colors.cyanAccent.shade700
+                                        : Colors.blueGrey.shade600,
+                                    child: Text(
+                                      _showText[_showSeq[index]]!,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 18),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

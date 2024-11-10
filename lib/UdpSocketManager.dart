@@ -37,13 +37,13 @@ class UdpSocketManager {
                   var df = DeviceInfo();
                   df.address = msgJson[value_deviceIp];
                   df.name = msgJson[value_deviceName];
+                  df.deviceList = msgJson[value_lightInfo];
                   _deviceList[msgJson[value_deviceIp]] = df;
                   _deviceInfoCallback(_deviceList);
                 } else if (msgJson[key_type] == rev_type_lightInfo) {
-                  int brightness=msgJson[value_brightness];
-                  UiState uistate =
-                      UiState(mapValue(brightness.ceilToDouble(), 0, 1024, 0, 100), BrightnessModel.read);
-                  _brightnessCallback(uistate);
+                  Map<String,int> brightness=msgJson[value_lightInfo];
+                  
+                  _brightnessCallback(brightness);
                 }
               }
             }

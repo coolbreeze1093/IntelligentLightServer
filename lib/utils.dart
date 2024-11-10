@@ -5,7 +5,7 @@ double mapValue(
   return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
 }
 
-enum BrightnessModel { read, colorful, sleep, soft } //0,1,2,3
+enum BrightnessModel { read, colorful, sleep, soft ,none} //0,1,2,3
 
 void setCheckBoxState(
     Map<BrightnessModel, bool> stateMap, BrightnessModel model, bool? state) {
@@ -67,15 +67,30 @@ Future<void> saveData(String key, String value) async {
   await prefs.setString(key, value);
 }
 
+// 保存数据
+Future<void> saveListData(String key, List<String> value) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList(key, value);
+}
+
 // 读取数据
 Future<String?> getData(String key) async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getString(key);
 }
 
+// 读取数据
+Future<List<String>?> getListData(String key) async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getStringList(key);
+}
+
 class DeviceInfo {
   String name = "";
   String address = "";
+  List<String> deviceList=[];
+  String islectLight="";
+  Map<String,UiState> lightinfo = {}; 
 }
 
 const String key_type = "type";
@@ -90,6 +105,8 @@ const String value_brightness = "brightness";
 const String value_model = "model";
 const String value_deviceIp = 'deviceIp';
 const String value_deviceName = 'deviceName';
+const String value_lightInfo = "lightInfo";
+
 
 const int revPort = 56698;
 const int sendPort = 56696;
@@ -97,3 +114,5 @@ const int sendPort = 56696;
 const String broadcastIP = '255.255.255.255';
 
 const String config_Key_CurrentUser = "CurrentUser";
+const String config_Key_CurrentLightInfo = "CurrentLightInfo";
+
