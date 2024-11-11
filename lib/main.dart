@@ -98,9 +98,9 @@ class _MyHomePageState extends State<MyHomePage> {
     if (ip != null) {
       _curUser.address = ip;
     }
-    List<String>? deviceList = await getListData(config_Key_CurrentUser);
+    List<dynamic>? deviceList = await getListData(config_Key_CurrentLightInfo);
     if (deviceList != null) {
-      _curUser.deviceList = deviceList;
+      _curUser.deviceList = List<String>.from(deviceList);
     }
 
     for (String value in _curUser.deviceList) {
@@ -130,6 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _incrementCounter(double value) {
     setState(() {
+      logger.d("cur brightness $value");
       _curUser.lightinfo[_curUser.selectedLight]?.setBrightness(value);
     });
 
@@ -161,6 +162,7 @@ class _MyHomePageState extends State<MyHomePage> {
       key_type: send_type_lightInfo,
       value_brightness: brightnessMap,
     };
+    logger.d("sendData $sendData");
     udpSocketManager.sendMessage(jsonEncode(sendData), ip, port);
   }
 
@@ -226,7 +228,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               );
               if (selectUser != null || selectUser?.address != "empty") {
-                _curUser = selectUser!;
+                setState(() {
+                  _curUser = selectUser!;
+                  for (var element in _curUser.deviceList) {
+                    _curUser.lightinfo[element] = UiState(0, BrightnessModel.none);
+                  }
+                  _curUser.selectedLight=_curUser.deviceList.first;
+                });
                 saveData(config_Key_CurrentUser, _curUser.address);
                 saveListData(config_Key_CurrentLightInfo, _curUser.deviceList);
               }
@@ -273,8 +281,8 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: Slider(
                               value: _curUser.lightinfo.isEmpty
                                   ? 0
-                                  : _curUser.lightinfo[_curUser.selectedLight]!
-                                      .brightness,
+                                  : _curUser.lightinfo.keys.contains(_curUser.selectedLight)?_curUser.lightinfo[_curUser.selectedLight]!.brightness:0
+                                      ,
                               onChanged: (double value) {
                                 _incrementCounter(value);
                               },
@@ -284,10 +292,10 @@ class _MyHomePageState extends State<MyHomePage> {
                               divisions: 100,
                               label: _curUser.lightinfo.isEmpty
                                   ? "0"
-                                  : _curUser.lightinfo[_curUser.selectedLight]!
+                                  : _curUser.lightinfo.keys.contains(_curUser.selectedLight)?_curUser.lightinfo[_curUser.selectedLight]!
                                       .brightness
                                       .round()
-                                      .toString(),
+                                      .toString():"0",
                             ),
                           ),
                         ),

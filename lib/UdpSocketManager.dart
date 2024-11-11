@@ -2,11 +2,14 @@ import 'dart:io';
 import 'dart:convert';
 import 'utils.dart';
 
+typedef DeviceInfoCallbackFunc= void Function(Map<String, DeviceInfo>);
+typedef BrightnessCallbackFunc= void Function(Map<String, int>);
+
 class UdpSocketManager {
   late RawDatagramSocket socket;
-  final Map<String, DeviceInfo> _deviceList = {};
-  late Function? _brightnessCallback;
-  late Function? _deviceInfoCallback;
+  Map<String, DeviceInfo> _deviceList = {};
+  BrightnessCallbackFunc? _brightnessCallback;
+  DeviceInfoCallbackFunc? _deviceInfoCallback;
   UdpSocketManager();
 
   void initializeSocket() async {
@@ -45,19 +48,33 @@ class UdpSocketManager {
     Datagram? datagram = socket.receive();
     if (datagram != null) {
       Map<String, dynamic> msgJson = jsonDecode(utf8.decode(datagram.data));
+      logger.d(msgJson);
       if (msgJson.isNotEmpty) {
         if (msgJson.containsKey(key_type)) {
           if (msgJson[key_type] == rev_type_deviceList) {
             var df = DeviceInfo();
             df.address = msgJson[value_deviceIp];
             df.name = msgJson[value_deviceName];
-            df.deviceList = msgJson[value_lightInfo];
+            df.deviceList = List<String>.from(msgJson[value_lightInfo]);
             _deviceList[msgJson[value_deviceIp]] = df;
-            _deviceInfoCallback!(_deviceList);
+            if(_deviceInfoCallback!=null)
+            {
+              logger.d("_deviceInfoCallback is null");
+                _deviceInfoCallback!(_deviceList);
+            }
+            else{
+              logger.d("_deviceInfoCallback is null");
+            }
+            
           } else if (msgJson[key_type] == rev_type_lightInfo) {
-            Map<String, int> brightness = msgJson[value_lightInfo];
-
-            _brightnessCallback!(brightness);
+            Map<String, dynamic> brightness = msgJson[value_lightInfo];
+            if(_brightnessCallback!=null)
+            {
+              _brightnessCallback!(Map<String, int>.from(brightness));
+            }
+            else{
+              logger.d("_brightnessCallback is null");
+            }
           }
         }
       }
@@ -85,11 +102,12 @@ class UdpSocketManager {
     socket.close();
   }
 
-  void brightnessCallback(Function func) {
+  void brightnessCallback(BrightnessCallbackFunc func) {
     _brightnessCallback = func;
   }
 
-  void deviceInfoCallback(Function func) {
+  void deviceInfoCallback(DeviceInfoCallbackFunc func) {
+    
     _deviceInfoCallback = func;
   }
 

@@ -84,9 +84,15 @@ Future<String?> getData(String key) async {
 }
 
 // 读取数据
-Future<List<String>?> getListData(String key) async {
+Future<List<dynamic>?> getListData(String key) async {
   final prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList(key);
+  // 获取数据并做类型检查
+  final list = prefs.getStringList(key);
+  
+  // 确保返回的是 List 类型
+  if (list != null) {
+    return List<dynamic>.from(list);
+  }
 }
 
 class DeviceInfo {
