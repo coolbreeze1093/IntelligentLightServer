@@ -38,6 +38,7 @@ dependencies:
   connectivity_plus: ^6.1.0
   network_info_plus: ^6.1.0
   shared_preferences: ^2.0.13
+  logger: ^1.3.0
 
 dev_dependencies:
   flutter_test:

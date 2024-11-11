@@ -33,7 +33,8 @@ class _DeviceInfoDialog extends State<DeviceInfoDialog> {
   }
 
   void deviceInfo(Map<String, DeviceInfo> dm) {
-    print("收到了设备列表");
+    logger.d("收到了设备列表");
+
     setState(() {
       _deviceMap = dm;
     });
@@ -128,23 +129,25 @@ class _DeviceInfoDialog extends State<DeviceInfoDialog> {
             children: [
               TextButton(
                 onPressed: () {
-                  DeviceInfo info=DeviceInfo();
-                    info.address="empty";
-                  if (_selectedIndex == null||_curUser==null) {
+                  DeviceInfo info = DeviceInfo();
+                  info.address = "empty";
+                  if (_selectedIndex == null || _curUser == null) {
                     Navigator.of(context).pop(info);
                   } else {
                     Navigator.of(context).pop(_curUser!);
                   }
                 },
-                child: const Text("确认", style: TextStyle(color: Colors.cyanAccent)),
+                child: const Text("确认",
+                    style: TextStyle(color: Colors.cyanAccent)),
               ),
               TextButton(
                 onPressed: () {
-                  DeviceInfo info=DeviceInfo();
-                    info.address="empty";
+                  DeviceInfo info = DeviceInfo();
+                  info.address = "empty";
                   Navigator.of(context).pop(info);
                 },
-                child: const Text("取消", style: TextStyle(color: Colors.cyanAccent)),
+                child: const Text("取消",
+                    style: TextStyle(color: Colors.cyanAccent)),
               ),
             ],
           ),

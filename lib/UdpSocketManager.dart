@@ -5,69 +5,83 @@ import 'utils.dart';
 class UdpSocketManager {
   late RawDatagramSocket socket;
   final Map<String, DeviceInfo> _deviceList = {};
-  late Function _brightnessCallback;
-  late Function _deviceInfoCallback;
+  late Function? _brightnessCallback;
+  late Function? _deviceInfoCallback;
   UdpSocketManager();
 
   void initializeSocket() async {
     try {
       socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, revPort);
-      print('初始化 UDP 套接字成功');
+      logger.d('初始化 UDP 套接字成功');
       socket.broadcastEnabled = true;
       socket.multicastHops = 10;
+      lisent();
     } catch (e) {
-      print('初始化 UDP 套接字失败：$e');
+      logger.e('初始化 UDP 套接字失败：$e');
     }
-
-    lisent();
   }
 
   void lisent() async {
     socket.listen(
       (RawSocketEvent event) {
-        print("save ${event.toString()}");
+        logger.d("save ${event.toString()}");
+
         if (event == RawSocketEvent.read) {
-          Datagram? datagram = socket.receive();
-          if (datagram != null) {
-            Map<String, dynamic> msgJson =
-                jsonDecode(utf8.decode(datagram.data));
-            if (msgJson.isNotEmpty) {
-              if (msgJson.containsKey(key_type)) {
-                if (msgJson[key_type] == rev_type_deviceList) {
-                  var df = DeviceInfo();
-                  df.address = msgJson[value_deviceIp];
-                  df.name = msgJson[value_deviceName];
-                  df.deviceList = msgJson[value_lightInfo];
-                  _deviceList[msgJson[value_deviceIp]] = df;
-                  _deviceInfoCallback(_deviceList);
-                } else if (msgJson[key_type] == rev_type_lightInfo) {
-                  Map<String,int> brightness=msgJson[value_lightInfo];
-                  
-                  _brightnessCallback(brightness);
-                }
-              }
-            }
-            // 处理接收到的消息
-          }
+          _handleRevMsg();
         } else if (event == RawSocketEvent.write) {
-          print("UDP 套接字写入事件");
+          logger.d("UDP 套接字写入事件");
         }
       },
       onError: (error) {
-        print("udp 监听错误: $error");
+        logger.e("udp 监听错误: $error");
       },
       onDone: () {
-        print("udp 监听完成");
+        logger.d("udp 监听完成");
       },
     );
   }
 
+  void _handleRevMsg() {
+    Datagram? datagram = socket.receive();
+    if (datagram != null) {
+      Map<String, dynamic> msgJson = jsonDecode(utf8.decode(datagram.data));
+      if (msgJson.isNotEmpty) {
+        if (msgJson.containsKey(key_type)) {
+          if (msgJson[key_type] == rev_type_deviceList) {
+            var df = DeviceInfo();
+            df.address = msgJson[value_deviceIp];
+            df.name = msgJson[value_deviceName];
+            df.deviceList = msgJson[value_lightInfo];
+            _deviceList[msgJson[value_deviceIp]] = df;
+            _deviceInfoCallback!(_deviceList);
+          } else if (msgJson[key_type] == rev_type_lightInfo) {
+            Map<String, int> brightness = msgJson[value_lightInfo];
+
+            _brightnessCallback!(brightness);
+          }
+        }
+      }
+      // 处理接收到的消息
+    }
+  }
+
   void sendMessage(String message, String address, int sendPort) {
-    socket.send(utf8.encode(message), InternetAddress(address), sendPort);
+    try {
+      var bytes = utf8.encode(message);
+      int sentBytes = socket.send(bytes, InternetAddress(address), sendPort);
+      if (sentBytes == bytes.length) {
+        logger.d("消息成功发送到网络层 $address");
+      } else {
+        logger.d("消息未能成功发送到网络层");
+      }
+    } catch (e) {
+      logger.e("发送消息失败: $e");
+    }
   }
 
   void close() {
-    print("关闭 udp 监听");
+    logger.d("关闭 udp 监听");
+
     socket.close();
   }
 
@@ -79,13 +93,18 @@ class UdpSocketManager {
     _deviceInfoCallback = func;
   }
 
-  void queryBrightness(String remoteip,String localip) {
-    Map<String, String> message = {key_type: send_type_querylightInfo,value_localip: localip};
+  void queryBrightness(String remoteip, String localip) {
+    Map<String, String> message = {
+      key_type: send_type_querylightInfo,
+      value_localip: localip
+    };
 
     sendMessage(jsonEncode(message), remoteip, sendPort);
   }
 
   void queryDevicInfo(String localip) {
+    logger.d("queryDevicInfo");
+
     Map<String, String> message = {
       key_type: send_type_deviceList,
       value_localip: localip

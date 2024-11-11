@@ -1,11 +1,15 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:logger/logger.dart';
+
+final logger = Logger();
+
 double mapValue(
     double value, double inMin, double inMax, double outMin, double outMax) {
   return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
 }
 
-enum BrightnessModel { read, colorful, sleep, soft ,none} //0,1,2,3
+enum BrightnessModel { read, colorful, sleep, soft, none } //0,1,2,3
 
 void setCheckBoxState(
     Map<BrightnessModel, bool> stateMap, BrightnessModel model, bool? state) {
@@ -48,7 +52,7 @@ class UiState {
   double _brightness;
 
   UiState(this._brightness, this._model);
-  
+
   BrightnessModel get model => _model; // 获取模式
   double get brightness => _brightness; // 获取亮度
 
@@ -88,9 +92,9 @@ Future<List<String>?> getListData(String key) async {
 class DeviceInfo {
   String name = "";
   String address = "";
-  List<String> deviceList=[];
-  String islectLight="";
-  Map<String,UiState> lightinfo = {}; 
+  List<String> deviceList = [];
+  String selectedLight = "";
+  Map<String, UiState> lightinfo = {};
 }
 
 const String key_type = "type";
@@ -107,7 +111,6 @@ const String value_deviceIp = 'deviceIp';
 const String value_deviceName = 'deviceName';
 const String value_lightInfo = "lightInfo";
 
-
 const int revPort = 56698;
 const int sendPort = 56696;
 
@@ -115,4 +118,3 @@ const String broadcastIP = '255.255.255.255';
 
 const String config_Key_CurrentUser = "CurrentUser";
 const String config_Key_CurrentLightInfo = "CurrentLightInfo";
-
