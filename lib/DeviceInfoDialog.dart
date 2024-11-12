@@ -41,7 +41,7 @@ class _DeviceInfoDialog extends State<DeviceInfoDialog> {
   }
 
   void localAddress(String ip, String mac) {
-    widget.udpSocketManager.queryDevicInfo(ip);
+    widget.udpSocketManager.scanDevicList(ip);
     setState(() {
       _localIP = ip;
       _localMac = mac;

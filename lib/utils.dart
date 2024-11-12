@@ -88,7 +88,7 @@ Future<List<dynamic>?> getListData(String key) async {
   final prefs = await SharedPreferences.getInstance();
   // 获取数据并做类型检查
   final list = prefs.getStringList(key);
-  
+
   // 确保返回的是 List 类型
   if (list != null) {
     return List<dynamic>.from(list);
@@ -99,23 +99,30 @@ class DeviceInfo {
   String name = "";
   String address = "";
   List<String> deviceList = [];
-  String selectedLight = "";
-  Map<String, UiState> lightinfo = {};
+  String selectedLamp = "";
+  Map<String, UiState> lampInfo = {};
+
+  Map<String, int> getBrightnessMap() {
+    Map<String, int> brightnessMap = {};
+    lampInfo.forEach((String key, UiState value) {
+      brightnessMap[key] = mapValue(value.brightness, 0, 100, 0, 1024).round();
+    });
+
+    return brightnessMap;
+  }
 }
 
 const String key_type = "type";
-const String rev_type_deviceList = "deviceList";
-const String rev_type_lightInfo = "lightInfo";
-const String send_type_lightInfo = "lightInfo";
-const String send_type_querylightInfo = "querylightInfo";
-const String send_type_deviceList = "deviceList";
+const String type_setLampBrightness = "SetLampBrightness";
+const String type_queryLampBrightness = "QuerylightInfo";
+const String type_scanDeviceList = "ScanDeviceList";
 
 const String value_localip = "localip";
 const String value_brightness = "brightness";
-const String value_model = "model";
+const String value_lightModel = "lightmodel";
 const String value_deviceIp = 'deviceIp';
 const String value_deviceName = 'deviceName';
-const String value_lightInfo = "lightInfo";
+const String value_ledLightList = "lightInfo";
 
 const int revPort = 56698;
 const int sendPort = 56696;

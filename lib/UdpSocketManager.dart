@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'utils.dart';
 
-typedef DeviceInfoCallbackFunc= void Function(Map<String, DeviceInfo>);
-typedef BrightnessCallbackFunc= void Function(Map<String, int>);
+typedef DeviceInfoCallbackFunc = void Function(Map<String, DeviceInfo>);
+typedef BrightnessCallbackFunc = void Function(Map<String, int>);
 
 class UdpSocketManager {
   late RawDatagramSocket socket;
@@ -48,31 +48,26 @@ class UdpSocketManager {
     Datagram? datagram = socket.receive();
     if (datagram != null) {
       Map<String, dynamic> msgJson = jsonDecode(utf8.decode(datagram.data));
-      logger.d(msgJson);
+      logger.d("收到消息：$msgJson");
       if (msgJson.isNotEmpty) {
         if (msgJson.containsKey(key_type)) {
-          if (msgJson[key_type] == rev_type_deviceList) {
+          if (msgJson[key_type] == type_scanDeviceList) {
             var df = DeviceInfo();
             df.address = msgJson[value_deviceIp];
             df.name = msgJson[value_deviceName];
-            df.deviceList = List<String>.from(msgJson[value_lightInfo]);
+            df.deviceList = List<String>.from(msgJson[value_ledLightList]);
             _deviceList[msgJson[value_deviceIp]] = df;
-            if(_deviceInfoCallback!=null)
-            {
+            if (_deviceInfoCallback != null) {
               logger.d("_deviceInfoCallback is null");
-                _deviceInfoCallback!(_deviceList);
-            }
-            else{
+              _deviceInfoCallback!(_deviceList);
+            } else {
               logger.d("_deviceInfoCallback is null");
             }
-            
-          } else if (msgJson[key_type] == rev_type_lightInfo) {
-            Map<String, dynamic> brightness = msgJson[value_lightInfo];
-            if(_brightnessCallback!=null)
-            {
+          } else if (msgJson[key_type] == type_queryLampBrightness) {
+            Map<String, dynamic> brightness = msgJson[value_ledLightList];
+            if (_brightnessCallback != null) {
               _brightnessCallback!(Map<String, int>.from(brightness));
-            }
-            else{
+            } else {
               logger.d("_brightnessCallback is null");
             }
           }
@@ -86,6 +81,7 @@ class UdpSocketManager {
     try {
       var bytes = utf8.encode(message);
       int sentBytes = socket.send(bytes, InternetAddress(address), sendPort);
+      logger.d("发送消息：$message");
       if (sentBytes == bytes.length) {
         logger.d("消息成功发送到网络层 $address");
       } else {
@@ -107,27 +103,32 @@ class UdpSocketManager {
   }
 
   void deviceInfoCallback(DeviceInfoCallbackFunc func) {
-    
     _deviceInfoCallback = func;
   }
 
-  void queryBrightness(String remoteip, String localip) {
+  void queryLampBrightness(String remoteip, String localip) {
     Map<String, String> message = {
-      key_type: send_type_querylightInfo,
+      key_type: type_queryLampBrightness,
       value_localip: localip
     };
 
     sendMessage(jsonEncode(message), remoteip, sendPort);
   }
 
-  void queryDevicInfo(String localip) {
-    logger.d("queryDevicInfo");
-
+  void scanDevicList(String localip) {
     Map<String, String> message = {
-      key_type: send_type_deviceList,
+      key_type: type_scanDeviceList,
       value_localip: localip
     };
 
     sendMessage(jsonEncode(message), broadcastIP, sendPort);
+  }
+
+  void setLampBrightness(String localip, Map<String, int> brightnessMap) {
+    Map<String, dynamic> sendData = {
+      key_type: type_setLampBrightness,
+      value_brightness: brightnessMap,
+    };
+    sendMessage(jsonEncode(sendData), localip, sendPort);
   }
 }
