@@ -93,7 +93,10 @@ Future<List<dynamic>?> getListData(String key) async {
   if (list != null) {
     return List<dynamic>.from(list);
   }
+  return null;
 }
+
+typedef MappingFunc = int Function(double);
 
 class DeviceInfo {
   String name = "";
@@ -102,10 +105,14 @@ class DeviceInfo {
   String selectedLamp = "";
   Map<String, UiState> lampInfo = {};
 
-  Map<String, int> getBrightnessMap() {
+  Map<String, int> getBrightnessMap(MappingFunc ch) {
     Map<String, int> brightnessMap = {};
     lampInfo.forEach((String key, UiState value) {
-      brightnessMap[key] = mapValue(value.brightness, 0, 100, 0, 1024).round();
+      if (key == selectedLamp) {
+        brightnessMap[key] = ch(value.brightness);
+      } else {
+        brightnessMap[key] = value.brightness.round();
+      }
     });
 
     return brightnessMap;

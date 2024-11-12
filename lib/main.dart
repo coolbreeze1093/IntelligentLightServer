@@ -65,6 +65,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   DeviceInfo _curUser = DeviceInfo();
 
+  String _localIP = '';
+  String _localMac = '';
+
   // 模式的名称
   final Map<BrightnessModel, String> _showText = {
     BrightnessModel.soft: '柔光',
@@ -121,6 +124,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     getNetworkInfo.getNetworkInfo((String ip, String mac) {
+      _localIP=ip;
+      _localMac=mac;
       udpSocketManager.queryLampBrightness(_curUser.address, ip);
     });
   }
@@ -136,7 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       us.forEach((String key, int value) {
         _curUser.lampInfo[key]
-            ?.setBrightness(mapValue(value.ceilToDouble(), 0, 1024, 0, 100));
+            ?.setBrightness(value.ceilToDouble());
       });
     });
   }
@@ -159,14 +164,14 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_timeCount >= 10) {
       _timeCount = 0;
       udpSocketManager.setLampBrightness(
-          _curUser.address, _curUser.getBrightnessMap());
+          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
       return;
     }
 
     // 设置一个新的定时器，仅在延迟完成后发送消息
     _debounceTimer = Timer(const Duration(milliseconds: 50), () {
       udpSocketManager.setLampBrightness(
-          _curUser.address, _curUser.getBrightnessMap());
+          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
     });
   }
 
@@ -175,21 +180,31 @@ class _MyHomePageState extends State<MyHomePage> {
       if (_curUser.lampInfo.isNotEmpty) {
         _curUser.lampInfo[_curUser.selectedLamp]
             ?.setBrightModel(_showSeq[index]);
+            
       }
     });
     if (_curUser.lampInfo.isNotEmpty) {
       switch (_curUser.lampInfo[_curUser.selectedLamp]?.model) {
+
         case BrightnessModel.read:
-          _incrementCounter(3);
+          _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(5);
+          udpSocketManager.setLampBrightness(
+          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
           break;
         case BrightnessModel.colorful:
-          _incrementCounter(80);
+        _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(50);
+          udpSocketManager.setLampBrightness(
+          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
           break;
         case BrightnessModel.sleep:
-          _incrementCounter(0);
+        _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(1);
+          udpSocketManager.setLampBrightness(
+          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
           break;
         case BrightnessModel.soft:
-          _incrementCounter(30);
+        _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(10);
+          udpSocketManager.setLampBrightness(
+          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
           break;
         case null:
         // TODO: Handle this case.
@@ -222,6 +237,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _curUser.lampInfo[element] =
                         UiState(0, BrightnessModel.none);
                   }
+                  udpSocketManager.queryLampBrightness(_curUser.address, _localIP);
                   _curUser.selectedLamp = _curUser.deviceList.first;
                 });
                 saveData(config_Key_CurrentUser, _curUser.address);
@@ -239,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(width: 60),
+                const SizedBox(width: 65),
                 Expanded(
                     child: SizedBox(
                   child: Column(
@@ -249,7 +265,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         color: const Color.fromARGB(255, 162, 153, 77),
                         iconSize: 30,
                         onPressed: () {
-                          _incrementCounter(100);
+                          _incrementCounter(800);
                         },
                       ),
                       SizedBox(
@@ -277,8 +293,8 @@ class _MyHomePageState extends State<MyHomePage> {
                               },
                               onChangeEnd: (double value) {},
                               min: 0,
-                              max: 100,
-                              divisions: 100,
+                              max: 1024,
+                              divisions: 256,
                               label: _curUserIsValid()
                                   ? _curUser.lampInfo[_curUser.selectedLamp]!
                                       .brightness
@@ -300,17 +316,14 @@ class _MyHomePageState extends State<MyHomePage> {
                     ],
                   ),
                 )),
-                SizedBox(
-                  width: 50,
-                  height: MediaQuery.of(context).size.height * 0.4,
-                  child: RotatedBox(
-                    quarterTurns: 3,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(25), // 设置整体圆角
+
+                ClipRRect(
+                      borderRadius: BorderRadius.circular(19), // 设置整体圆角
                       child: Container(
-                        width: 50, // 设置宽度，确保内容不超出
+                        width: 45, // 设置宽度，确保内容不超出
+                        height: _curUser.deviceList.length*45,
                         color: Colors.transparent,
-                        child: Row(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(_curUser.deviceList.length,
                               (index) {
@@ -321,11 +334,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                       _curUser.deviceList[index];
                                 });
                               },
-                              child: RotatedBox(
-                                quarterTurns: 1,
-                                child: Container(
-                                  width: 40, // 设置宽度
-                                  height: 50, // 设置高度
+                              child:  Container(
+                                  width: 45, // 设置宽度
+                                  height: 45, // 设置高度
                                   alignment: Alignment.center, // 使文字居中
                                   color: _curUser.selectedLamp ==
                                           _curUser.deviceList[index]
@@ -334,17 +345,14 @@ class _MyHomePageState extends State<MyHomePage> {
                                   child: Text(
                                     _curUser.deviceList[index],
                                     style: const TextStyle(
-                                        color: Colors.white, fontSize: 18),
+                                        color: Colors.white, fontSize: 16),
                                   ),
                                 ),
-                              ),
                             );
                           }),
                         ),
                       ),
                     ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 100),
