@@ -30,7 +30,7 @@ class BrightnessMode extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(25), // 设置整体圆角
       child: Container(
-        width: 320, // 设置宽度，确保内容不超出
+        width: showSeq.length * 80, // 设置宽度，确保内容不超出
         height: 50, // 设置高度
         color: Colors.transparent,
         child: Row(

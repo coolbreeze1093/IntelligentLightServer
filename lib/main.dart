@@ -7,6 +7,7 @@ import 'dart:async';
 import 'DeviceInfoDialog.dart';
 import 'GetNetworkInfo.dart';
 import 'BrightnessMode.dart';
+import 'LampSelect.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -124,8 +125,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     getNetworkInfo.getNetworkInfo((String ip, String mac) {
-      _localIP=ip;
-      _localMac=mac;
+      _localIP = ip;
+      _localMac = mac;
       udpSocketManager.queryLampBrightness(_curUser.address, ip);
     });
   }
@@ -140,8 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void setUiState(Map<String, int> us) {
     setState(() {
       us.forEach((String key, int value) {
-        _curUser.lampInfo[key]
-            ?.setBrightness(value.ceilToDouble());
+        _curUser.lampInfo[key]?.setBrightness(value.ceilToDouble());
       });
     });
   }
@@ -163,15 +163,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (_timeCount >= 10) {
       _timeCount = 0;
-      udpSocketManager.setLampBrightness(
-          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
+      udpSocketManager.setLampBrightness(_curUser.address,
+          _curUser.getBrightnessMap((double value) {
+        return value.round();
+      }));
       return;
     }
 
     // 设置一个新的定时器，仅在延迟完成后发送消息
     _debounceTimer = Timer(const Duration(milliseconds: 50), () {
-      udpSocketManager.setLampBrightness(
-          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
+      udpSocketManager.setLampBrightness(_curUser.address,
+          _curUser.getBrightnessMap((double value) {
+        return value.round();
+      }));
     });
   }
 
@@ -180,31 +184,37 @@ class _MyHomePageState extends State<MyHomePage> {
       if (_curUser.lampInfo.isNotEmpty) {
         _curUser.lampInfo[_curUser.selectedLamp]
             ?.setBrightModel(_showSeq[index]);
-            
       }
     });
     if (_curUser.lampInfo.isNotEmpty) {
       switch (_curUser.lampInfo[_curUser.selectedLamp]?.model) {
-
         case BrightnessModel.read:
           _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(5);
-          udpSocketManager.setLampBrightness(
-          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
+          udpSocketManager.setLampBrightness(_curUser.address,
+              _curUser.getBrightnessMap((double value) {
+            return value.round();
+          }));
           break;
         case BrightnessModel.colorful:
-        _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(50);
-          udpSocketManager.setLampBrightness(
-          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
+          _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(50);
+          udpSocketManager.setLampBrightness(_curUser.address,
+              _curUser.getBrightnessMap((double value) {
+            return value.round();
+          }));
           break;
         case BrightnessModel.sleep:
-        _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(1);
-          udpSocketManager.setLampBrightness(
-          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
+          _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(1);
+          udpSocketManager.setLampBrightness(_curUser.address,
+              _curUser.getBrightnessMap((double value) {
+            return value.round();
+          }));
           break;
         case BrightnessModel.soft:
-        _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(10);
-          udpSocketManager.setLampBrightness(
-          _curUser.address, _curUser.getBrightnessMap((double value){return value.round();}));
+          _curUser.lampInfo[_curUser.selectedLamp]?.setBrightness(10);
+          udpSocketManager.setLampBrightness(_curUser.address,
+              _curUser.getBrightnessMap((double value) {
+            return value.round();
+          }));
           break;
         case null:
         // TODO: Handle this case.
@@ -237,7 +247,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     _curUser.lampInfo[element] =
                         UiState(0, BrightnessModel.none);
                   }
-                  udpSocketManager.queryLampBrightness(_curUser.address, _localIP);
+                  udpSocketManager.queryLampBrightness(
+                      _curUser.address, _localIP);
                   _curUser.selectedLamp = _curUser.deviceList.first;
                 });
                 saveData(config_Key_CurrentUser, _curUser.address);
@@ -316,43 +327,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     ],
                   ),
                 )),
-
-                ClipRRect(
-                      borderRadius: BorderRadius.circular(19), // 设置整体圆角
-                      child: Container(
-                        width: 45, // 设置宽度，确保内容不超出
-                        height: _curUser.deviceList.length*45,
-                        color: Colors.transparent,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(_curUser.deviceList.length,
-                              (index) {
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _curUser.selectedLamp =
-                                      _curUser.deviceList[index];
-                                });
-                              },
-                              child:  Container(
-                                  width: 45, // 设置宽度
-                                  height: 45, // 设置高度
-                                  alignment: Alignment.center, // 使文字居中
-                                  color: _curUser.selectedLamp ==
-                                          _curUser.deviceList[index]
-                                      ? Colors.cyanAccent.shade700
-                                      : Colors.blueGrey.shade600,
-                                  child: Text(
-                                    _curUser.deviceList[index],
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 16),
-                                  ),
-                                ),
-                            );
-                          }),
-                        ),
-                      ),
-                    ),
+                LampSelect(_curUser.deviceList, _curUser.selectedLamp,
+                    (int index) {
+                  setState(() {
+                    _curUser.selectedLamp = _curUser.deviceList[index];
+                  });
+                })
               ],
             ),
             const SizedBox(height: 100),
